@@ -14,7 +14,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Setup ChromaDB HttpClient (ensure `chroma run --path memory/chroma` is running)
-chroma_client = HttpClient(host="https://chroma-server-rlkc.onrender.com", port=80)
+chroma_client = HttpClient(host="chroma-server-rlkc.onrender.com", port=80)
 
 # Embedding function for similarity search
 embedding_function = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
