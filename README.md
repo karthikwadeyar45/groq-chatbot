@@ -22,8 +22,8 @@ This is a Streamlit-based chatbot that:
 ### 1. Clone the Repo
 
 ```bash
-git clone https://github.com/karthikwadeyar45/groq-chatbot-mongodb.git
-cd groq-chatbot-mongodb
+git clone https://github.com/karthikwadeyar45/groq-chatbot.git
+cd groq-chatbot
 ```
 
 ---
