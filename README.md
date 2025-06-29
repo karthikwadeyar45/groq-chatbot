@@ -1,61 +1,55 @@
-# 🧠 Groq-Powered Chatbot with Memory (Streamlit + ChromaDB)
 
-This project is an interactive chatbot that uses:
-- 🧠 **Groq API** for blazing-fast responses (Mixtral / LLaMA 3)
-- 🗂️ **ChromaDB** for persistent memory (semantic search)
-- 🌐 **Streamlit** for a simple chat interface
-- 🤗 **SentenceTransformers** to embed user messages for recall
+# 🧠 Streamlit Chatbot with MongoDB Memory and Groq API
+
+This is a Streamlit-based chatbot that:
+- Uses Groq's `llama3-70b-8192` model for responses
+- Stores conversation history in MongoDB Atlas
+- Recalls memory across sessions
 
 ---
 
 ## 🚀 Features
 
-- Remembers past user interactions
-- Answers follow-up questions using vector memory
-- Keeps memory persistent between sessions (via ChromaDB)
-- Fully open-source, deployable to [Streamlit Cloud](https://streamlit.io/cloud)
+- Interactive chat UI
+- Persistent memory using MongoDB
+- Full history recall (scoped per session)
+- Free-tier friendly (Streamlit + MongoDB Atlas)
 
 ---
 
-## 📦 Installation
+## 🛠️ Setup Instructions
 
-1. **Clone this repo**
-   ```bash
-   git clone https://github.com/karthikwadeyar45/groq-chatbot.git
-   cd groq-chatbot
-   ```
-
-2. **Create a virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install requirements**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Create `.env` file**
-   ```bash
-   echo "GROQ_API_KEY=your_groq_key_here" > .env
-   ```
-
----
-
-## 🧠 Start ChromaDB Server
-
-In a new terminal:
+### 1. Clone the Repo
 
 ```bash
-chroma run --path memory/chroma
+git clone https://github.com/karthikwadeyar45/groq-chatbot-mongodb.git
+cd groq-chatbot-mongodb
 ```
-
-This keeps your chatbot memory persistent.
 
 ---
 
-## 🧪 Run Locally
+### 2. Create a `.env` File
+
+Create a `.env` file in the root directory and add:
+
+```env
+GROQ_API_KEY=your_groq_api_key
+MONGODB_URI=your_mongodb_connection_uri
+```
+
+> You can get your MongoDB URI from [https://cloud.mongodb.com](https://cloud.mongodb.com)
+
+---
+
+### 3. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+### 4. Run the App Locally
 
 ```bash
 streamlit run app.py
@@ -63,27 +57,25 @@ streamlit run app.py
 
 ---
 
-## ☁️ Deploy on Streamlit Cloud
+### 5. Deploy to Streamlit Cloud
 
-1. Push this project to GitHub (don’t forget your `.gitignore`)
-2. Go to [https://streamlit.io/cloud](https://streamlit.io/cloud)
-3. Click **"New app"** and choose your repo
-4. In **Secrets** section, add:
+- Push your code to GitHub
+- Go to [https://streamlit.io/cloud](https://streamlit.io/cloud)
+- Create a new app and connect your GitHub repo
+- Add your secrets under **App Settings > Secrets**:
 
 ```
-GROQ_API_KEY=your-real-api-key-here
+GROQ_API_KEY = your_groq_key
+MONGODB_URI = your_mongo_uri
 ```
-
-5. Click **Deploy**
 
 ---
 
-## 📁 Project Structure
+## 📁 Folder Structure
 
 ```
-├── app.py                  # Main Streamlit app
-├── .env                    # Your API key (ignored)            
-├── memory/chroma/          # ChromaDB persistent memory
+├── app.py
+├── .env
 ├── requirements.txt
 ├── README.md
 └── .gitignore
@@ -91,10 +83,9 @@ GROQ_API_KEY=your-real-api-key-here
 
 ---
 
-## 🤝 Credits
+## 🔐 Environment Variables
 
-Built with ❤️ using:
-- [Groq](https://groq.com/)
-- [ChromaDB](https://www.trychroma.com/)
-- [Streamlit](https://streamlit.io/)
-- [Sentence Transformers](https://www.sbert.net/)
+- `GROQ_API_KEY`: Your Groq API Key
+- `MONGODB_URI`: Your MongoDB Atlas connection URI
+
+---

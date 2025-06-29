@@ -1,108 +1,72 @@
 import streamlit as st
 import os
 import requests
+import uuid
+from pymongo import MongoClient
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
-from chromadb import HttpClient
-from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
-# Load GROQ API key
+# Load environment variables
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+MONGODB_URI = os.getenv("MONGODB_URI")
 
-# Load embedding model
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# Setup ChromaDB HttpClient (ensure `chroma run --path memory/chroma` is running)
-chroma_client = HttpClient(host="chroma-server-rlkc.onrender.com", port=80)
-
-# Embedding function for similarity search
-embedding_function = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
-
-# Get or create persistent collection
-collection = chroma_client.get_or_create_collection(
-    name="chat_memory",
-    embedding_function=embedding_function
-)
+# MongoDB client setup
+client = MongoClient(MONGODB_URI)
+db = client["chatbot"]
+collection = db["chat_memory"]
 
 # Streamlit UI
-st.title("Groq Chatbot with Memory")
-st.chat_message("assistant").write("Hi, how may I help you?")
+st.title("💬 Groq Chatbot with MongoDB Memory")
+st.chat_message("assistant").write("Hi, how can I help you today?")
 
-# Initialize session
+# Session state initialization
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = list(collection.find({"session_id": st.session_state.session_id}))
 
-# Display chat history
+# Display previous messages
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
-# User input
-user_input = st.chat_input("Ask me anything...")
+# Chat input
+user_input = st.chat_input("Type your message...")
 
-# --- Build context by filtering noisy memory ---
-def build_context(user_query):
-    try:
-        results = collection.query(query_texts=[user_query], n_results=3)
-        relevant_docs = [
-            doc for doc in results["documents"][0]
-            if doc and "your name is" not in doc.lower()
-        ]
-        past_memory = "\n\n".join(relevant_docs)
+if user_input:
+    # Show user message
+    st.chat_message("user").write(user_input)
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    collection.insert_one({"session_id": st.session_state.session_id, "role": "user", "content": user_input})
 
-        return f"""You are a polite and helpful teaching assistant for a Data Science course.
+    # Prepare history for Groq API
+    history = [
+        {"role": "system", "content": "You are a polite and helpful teaching assistant for a data science course."}
+    ] + [
+        {"role": msg["role"], "content": msg["content"]} for msg in st.session_state.messages
+    ]
 
-Use the following past conversation memory to answer the current question:
-
-{past_memory}
-
-Now answer this: {user_query}
-"""
-    except Exception:
-        return user_query
-
-# --- Store new interaction in memory ---
-def store_to_memory(user_input, bot_response):
-    content = f"User: {user_input}\nAssistant: {bot_response}"
-    new_id = f"id-{len(collection.get()['ids'])}"
-    collection.add(documents=[content], ids=[new_id])
-
-# --- Call Groq API ---
-def call_groq(prompt):
-    url = "https://api.groq.com/openai/v1/chat/completions"
+    # Send request to Groq API
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
+
     payload = {
-        "model": "llama3-70b-8192",  # You can also use "llama3-70b-8192"
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.7
+        "model": "llama3-70b-8192",
+        "messages": history
     }
 
-    response = requests.post(url, headers=headers, json=payload)
+    response = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers=headers,
+        json=payload
+    )
 
-    if response.status_code != 200:
-        st.error(f"Groq API Error: {response.status_code}")
-        st.error(response.text)
-        raise requests.exceptions.HTTPError(response.text)
-
-    return response.json()["choices"][0]["message"]["content"]
-
-# --- Handle user query ---
-if user_input:
-    st.chat_message("user").write(user_input)
-
-    # Build prompt using filtered memory
-    full_prompt = build_context(user_input)
-
-    # Query Groq model
-    bot_response = call_groq(full_prompt)
-    st.chat_message("assistant").write(bot_response)
-
-    # Store to session + memory
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    st.session_state.messages.append({"role": "assistant", "content": bot_response})
-    store_to_memory(user_input, bot_response)
+    if response.status_code == 200:
+        assistant_reply = response.json()["choices"][0]["message"]["content"]
+        st.chat_message("assistant").write(assistant_reply)
+        st.session_state.messages.append({"role": "assistant", "content": assistant_reply})
+        collection.insert_one({"session_id": st.session_state.session_id, "role": "assistant", "content": assistant_reply})
+    else:
+        st.error("Error: Unable to get response from Groq API")

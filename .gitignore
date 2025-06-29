@@ -1,31 +1,12 @@
-# ✅ Secrets
 .env
-
-# ✅ Python environment
+.env.*
+*.env
 __pycache__/
-*.py[cod]
-*.egg-info/
-.envrc
-.venv/
-venv/
-env/
-
-# ✅ OS-specific junk
+*.pyc
+*.pyo
+*.pyd
+.Python
 .DS_Store
-Thumbs.db
-
-# ✅ IDE configs
-.vscode/
-.idea/
-
-# ✅ ChromaDB index files
-memory/chroma/*.parquet
-memory/chroma/*.pkl
-memory/chroma/*.json
-memory/chroma/index/
-
-# ✅ Logs
+*.db
 *.log
-
-# ✅ Streamlit cache (optional)
-.streamlit/
+*.sqlite3
