@@ -4,6 +4,7 @@ import requests
 import uuid
 from pymongo import MongoClient
 from dotenv import load_dotenv
+import re
 
 # Load environment variables
 load_dotenv()
@@ -15,15 +16,18 @@ client = MongoClient(MONGODB_URI)
 db = client["chatbot"]
 collection = db["chat_memory"]
 
-# Ask for username for persistent memory
+# Streamlit UI
 st.title("💬 Groq Chatbot with MongoDB Memory")
-name = st.text_input("Enter your name to start chatting:")
-if not name:
+
+# Ask for email
+email = st.text_input("Enter your email to start chatting:")
+if not email or not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+    st.info("Please enter a valid email to begin.")
     st.stop()
 
-# Create a unique session ID using username
+# Use email as session_id
 if "session_id" not in st.session_state:
-    st.session_state.session_id = name.strip().lower()
+    st.session_state.session_id = email.strip().lower()
 
 # Load message history from MongoDB
 if "messages" not in st.session_state:
@@ -57,7 +61,7 @@ if user_input:
     }
 
     payload = {
-        "model": "llama3-70b-8192",
+        "model": "mixtral-8x7b-32768",
         "messages": history
     }
 
