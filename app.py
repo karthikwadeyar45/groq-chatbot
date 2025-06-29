@@ -15,18 +15,22 @@ client = MongoClient(MONGODB_URI)
 db = client["chatbot"]
 collection = db["chat_memory"]
 
-# Streamlit UI
+# Ask for username for persistent memory
 st.title("💬 Groq Chatbot with MongoDB Memory")
-st.chat_message("assistant").write("Hi, how can I help you today?")
+name = st.text_input("Enter your name to start chatting:")
+if not name:
+    st.stop()
 
-# Session state initialization
+# Create a unique session ID using username
 if "session_id" not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())
+    st.session_state.session_id = name.strip().lower()
 
+# Load message history from MongoDB
 if "messages" not in st.session_state:
-    st.session_state.messages = list(collection.find({"session_id": st.session_state.session_id}))
+    stored = list(collection.find({"session_id": st.session_state.session_id}))
+    st.session_state.messages = stored
 
-# Display previous messages
+# Display previous chat
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
@@ -39,11 +43,11 @@ if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     collection.insert_one({"session_id": st.session_state.session_id, "role": "user", "content": user_input})
 
-    # Prepare history for Groq API
+    # Prepare history (limit to last 20)
     history = [
         {"role": "system", "content": "You are a polite and helpful teaching assistant for a data science course."}
     ] + [
-        {"role": msg["role"], "content": msg["content"]} for msg in st.session_state.messages
+        {"role": msg["role"], "content": msg["content"]} for msg in st.session_state.messages[-20:]
     ]
 
     # Send request to Groq API
@@ -69,4 +73,5 @@ if user_input:
         st.session_state.messages.append({"role": "assistant", "content": assistant_reply})
         collection.insert_one({"session_id": st.session_state.session_id, "role": "assistant", "content": assistant_reply})
     else:
-        st.error("Error: Unable to get response from Groq API")
+        st.error(f"Error: Unable to get response from Groq API ({response.status_code})")
+        st.code(response.text)
